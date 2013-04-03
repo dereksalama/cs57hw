@@ -1,0 +1,3 @@
+#define TOKEN_VALUE_OFFSET 258
+#define CODETOKEN 258
+#define EOFTOKEN 259
