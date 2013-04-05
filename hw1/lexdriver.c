@@ -19,6 +19,8 @@ int main(void)
                 hexvalue = strtol(yytext, NULL, 0);
                 printf("%#lx", hexvalue);
                 break;
+            case COMMENTTOKEN:
+                break;
             default:
                 printf("%s", yytext);
                 break;
