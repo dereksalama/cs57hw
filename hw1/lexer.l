@@ -3,6 +3,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#define COMMENT_ERROR "Premature EOF. Comment not closed."
+#define ARRAY_ERROR "Premature EOF. '[' not matched."
+
+int printNum();
+int printText();
 %}
 
 %option stack
@@ -25,9 +31,6 @@ letter 				[a-zA-Z]
 id 					({letter}|_)({letter}|{digit}|_)*
 
 %%
-					char string_buf[2048];
-					char *string_buf_ptr = string_buf;
-
 <*>\/\*				yy_push_state(COMMENT);
 <COMMENT>\*\/ 		yy_pop_state();
 <COMMENT>.|\n		yymore();
@@ -38,26 +41,31 @@ id 					({letter}|_)({letter}|{digit}|_)*
 
 <INITIAL,NESTED_EXPRESSION>{id}\[		{
 							yy_push_state(NESTED_EXPRESSION);
-							*(string_buf_ptr++) = '*';
-							*(string_buf_ptr++) = '(';
-							strncpy(string_buf_ptr, yytext, yyleng - 1);
-							*(string_buf_ptr++) = '+';
-							*(string_buf_ptr++) = '(';
-							yymore();
+							printf("%s","*(");
+							yytext[yyleng - 1] = '\0';
+							printf("%s",yytext);
+							printf("%s", "+(");
+							return 0;
 						}
 
 <NESTED_EXPRESSION>\]	{
 							yy_pop_state();
-							*(string_buf_ptr++) = ')';
-							*(string_buf_ptr++) = ')';
-							string_buf_ptr = string_buf;
-							printf("%s",string_buf_ptr);
+							printf("%s", "))");
 							return 0;
 						}
-<NESTED_EXPRESSION>.	yymore();
+<NESTED_EXPRESSION>.	return printText();
 
 
-<<EOF>>				return EOFTOKEN;
+<INITIAL><<EOF>>		return EOFTOKEN;
+<COMMENT><<EOF>>				{
+							printf("%s", COMMENT_ERROR);
+							return EOFTOKEN;
+						}
+<NESTED_EXPRESSION><<EOF>> {
+							printf("%s", ARRAY_ERROR);
+							return EOFTOKEN;
+						}
+
 
 %%
 

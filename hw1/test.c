@@ -15,5 +15,9 @@ int main(void) {
 	bo = 0x10;
 	bo = 16;
 	bo = 020;
+
+	array[bo];
+	array[bo[zo] + the[clown]];
+	array[/*with comment*/ 020];
 	return 0;
 }
