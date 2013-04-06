@@ -1,6 +1,8 @@
 %{
 #include "tokens.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 %}
 
 %option stack
@@ -28,11 +30,11 @@ id 					({letter}|_)({letter}|{digit}|_)*
 
 <*>\/\*				yy_push_state(COMMENT);
 <COMMENT>\*\/ 		yy_pop_state();
-<COMMENT>.|\n		return COMMENTTOKEN;
+<COMMENT>.|\n		yymore();
 
-<*>{hexnumber}			return NUMTOKEN;
-<*>{octalnumber}		return NUMTOKEN;
-<*>{decimal}			return NUMTOKEN;
+<*>{hexnumber}			return printNum();
+<*>{octalnumber}		return printNum();
+<*>{decimal}			return printNum();
 
 <INITIAL,NESTED_EXPRESSION>{id}\[		{
 							yy_push_state(NESTED_EXPRESSION);
@@ -41,21 +43,32 @@ id 					({letter}|_)({letter}|{digit}|_)*
 							strncpy(string_buf_ptr, yytext, yyleng - 1);
 							*(string_buf_ptr++) = '+';
 							*(string_buf_ptr++) = '(';
-							yytext = string_buf;
-							return EXPRESSIONTOKEN;
+							yymore();
 						}
 
 <NESTED_EXPRESSION>\]	{
 							yy_pop_state();
 							*(string_buf_ptr++) = ')';
 							*(string_buf_ptr++) = ')';
-							yytext = string_buf;
 							string_buf_ptr = string_buf;
-							return EXPRESSIONTOKEN;
+							printf("%s",string_buf_ptr);
+							return 0;
 						}
-<NESTED_EXPRESSION>.	return EXPRESSIONTOKEN;
+<NESTED_EXPRESSION>.	yymore();
 
 
 <<EOF>>				return EOFTOKEN;
 
 %%
+
+int printNum() {
+	long num;
+	num = strtol(yytext, NULL, 0);
+	printf("%#lx", num);
+	return 0;
+}
+
+int printText(){
+	printf("%s", yytext);
+	return 0;
+}
