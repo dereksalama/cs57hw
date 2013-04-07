@@ -1,5 +1,4 @@
 %{
-#include "tokens.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,25 +44,20 @@ id 					({letter}|_)({letter}|{digit}|_)*
 							yytext[yyleng - 1] = '\0';
 							printf("%s",yytext);
 							printf("%s", "+(");
-							return 0;
+							yymore();
 						}
 
 <NESTED_EXPRESSION>\]	{
 							yy_pop_state();
 							printf("%s", "))");
-							return 0;
 						}
-<NESTED_EXPRESSION>.	return printText();
+<NESTED_EXPRESSION,INITIAL>.|\n	return printText();
 
-
-<INITIAL><<EOF>>		return EOFTOKEN;
 <COMMENT><<EOF>>				{
 							printf("%s", COMMENT_ERROR);
-							return EOFTOKEN;
 						}
 <NESTED_EXPRESSION><<EOF>> {
 							printf("%s", ARRAY_ERROR);
-							return EOFTOKEN;
 						}
 
 
