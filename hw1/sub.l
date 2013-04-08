@@ -10,6 +10,7 @@ void printNum();
 void printText();
 void appendToPtr(char *ptr, char str[]);
 int isEmpty(char *str);
+void setToLast(char* ptr, char str[]);
 %}
 
 %option stack
@@ -38,7 +39,6 @@ comment 			\/\*{anything}*\*\/
 						char arrayId[1024];
 						char arrayBuf[1024];
 						char *bufPtr;
-						char *oldPtr;
 
 <INITIAL,ARRAY,NESTED_ARRAY>{comment}				{
 								yy_push_state(COMMENT);
@@ -71,10 +71,10 @@ comment 			\/\*{anything}*\*\/
 <ARRAY,NESTED_ARRAY>{id}\[{anything}*\]		{
 							yy_push_state(NESTED_ARRAY);
 							/*we know something is in the array so cpy*/
-							oldPtr = bufPtr;
-							appendToPtr(bufPtr, "*(");
-							appendToPtr(bufPtr, arrayId);
-							appendToPtr(bufPtr, "+(");
+							setToLast(bufPtr, arrayBuf);
+							strcat(arrayBuf, "*(");
+							strcat(arrayBuf, arrayId);
+							strcat(arrayBuf, "+(");
 
 							int i = 0;
 							while(yytext[i++] != '[');
@@ -84,11 +84,11 @@ comment 			\/\*{anything}*\*\/
 						}
 <NESTED_ARRAY>\]		{
 							yy_pop_state();
-							if(isEmpty(oldPtr)) {
-								appendToPtr(bufPtr, arrayId);
-								appendToPtr(bufPtr, "[]");
+							if(isEmpty(bufPtr)) {
+								strcat(arrayBuf, arrayId);
+								strcat(arrayBuf, "[]");
 							} else {
-								appendToPtr(bufPtr,"))");
+								strcat(arrayBuf,"))");
 							}
 						}		
 <ARRAY>\]				{
@@ -109,10 +109,15 @@ comment 			\/\*{anything}*\*\/
 
 <INITIAL>{anything}	printText();
 <ARRAY,NESTED_ARRAY>{anything}	{
-							appendToPtr(bufPtr, yytext);
+							strcat(arrayBuf, yytext);
 						}
 
 %%
+void setToLast(char *ptr, char str[]) {
+	int i;
+	for(i = 0; str[i] != '\0'; i++);
+	ptr = str + i + 1;
+}
 int isEmpty(char str[]) {
 	int i;
 	for(i = 0; str[i] != '\0'; i++) {
