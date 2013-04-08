@@ -96,7 +96,7 @@ comment 			\/\*{anything}*\*\/
 							}
 						}		
 <ARRAY>\]				{
-							if(isEmpty(arrayBuf)) {
+							if(isEmpty(bufPtr)) {
 								printf("%s", arrayId);
 								printf("[]");
 							} else {
