@@ -3,17 +3,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define COMMENT_ERROR "Premature EOF. Comment not closed."
-#define ARRAY_ERROR "Premature EOF. '[' not matched."
+#define COMMENT_ERROR "Error - Comment not closed."
+#define ARRAY_ERROR "Error - '[' not matched."
 
-int printNum();
-int printText();
+void printNum();
+void printText();
 %}
 
 %option stack
 %x COMMENT
 %x NESTED_EXPRESSION
 
+white				[ \t\n]
+notwhite			[^ \t\n]
+anything			(.|\n)
 digit 				[0-9]
 integer 			{digit}+
 signedint 			[-+]?{integer}
@@ -29,48 +32,61 @@ decimal 			[1-9]{digit}*
 letter 				[a-zA-Z]
 id 					({letter}|_)({letter}|{digit}|_)*
 
+comment 			\/\*{anything}*\*\/
 %%
-<*>\/\*				yy_push_state(COMMENT);
-<COMMENT>\*\/ 		yy_pop_state();
-<COMMENT>.|\n		yymore();
+<*>{comment}				{
+								yy_push_state(COMMENT);
+								yyless(2);
+							}
+<COMMENT>\*\/ 				yy_pop_state();
+<COMMENT>{anything}			/*do nothing*/
 
-<*>{hexnumber}			return printNum();
-<*>{octalnumber}		return printNum();
-<*>{decimal}			return printNum();
+<*>\/\*						{
+								printf("%s\n", COMMENT_ERROR);
+								yyterminate();
+							}
 
-<INITIAL,NESTED_EXPRESSION>{id}\[		{
+<*>{hexnumber}			printNum();
+<*>{octalnumber}		printNum();
+<*>{decimal}			printNum();
+
+<INITIAL,NESTED_EXPRESSION>{id}\[({comment}|{white})*\] {
+							int i = 0;
+							while(yytext[i++] != '[');
+							yytext[i - 1] = '\0';
+							printText();
+							printf("%s","[]");
+						} 
+<INITIAL,NESTED_EXPRESSION>{id}\[{anything}+\]		{
 							yy_push_state(NESTED_EXPRESSION);
 							printf("%s","*(");
+							int i = 0;
+							while(yytext[i++] != '[');
+							yyless(i);
 							yytext[yyleng - 1] = '\0';
-							printf("%s",yytext);
+							printText();
 							printf("%s", "+(");
-							yymore();
 						}
+<INITIAL,NESTED_EXPRESSION>{id}\[ {
+							printf("%s\n", ARRAY_ERROR);
+							yyterminate();
+						}					
 
 <NESTED_EXPRESSION>\]	{
 							yy_pop_state();
 							printf("%s", "))");
 						}
-<NESTED_EXPRESSION,INITIAL>.|\n	return printText();
 
-<COMMENT><<EOF>>				{
-							printf("%s", COMMENT_ERROR);
-						}
-<NESTED_EXPRESSION><<EOF>> {
-							printf("%s", ARRAY_ERROR);
-						}
-
+<NESTED_EXPRESSION,INITIAL>{anything}	printText();
 
 %%
 
-int printNum() {
+void printNum() {
 	long num;
 	num = strtol(yytext, NULL, 0);
 	printf("%#lx", num);
-	return 0;
 }
 
-int printText(){
+void printText(){
 	printf("%s", yytext);
-	return 0;
 }

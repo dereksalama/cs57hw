@@ -20,5 +20,6 @@ int main(void) {
 	array[bo[zo] + the[clown]];
 	array[/*with comment*/ 020];
 	array[/*this should just be "array[]"*/];
+	array[ /*even with */ /*multiple comments*/];
 	return 0;
 }
