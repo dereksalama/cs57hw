@@ -85,6 +85,7 @@ comment 			\/\*{anything}*\*\/
 							yyless(i);
 							yytext[yyleng - 1] = '\0';
 							strcpy(arrayId, yytext);
+							printf("Matched nested array: %s\n", arrayId);
 						}
 <NESTED_ARRAY>\]		{
 							yy_pop_state();
@@ -113,14 +114,22 @@ comment 			\/\*{anything}*\*\/
 
 <INITIAL>{anything}	printText();
 <ARRAY,NESTED_ARRAY>{anything}	{
-							strcat(arrayBuf, yytext);
+							if (isEmpty(yytext)) {
+								return;
+							} else if (isEmpty(bufPtr)) {
+								strcat(arrayBuf, "*(");
+								strcat(arrayBuf, arrayId);
+								strcat(arrayBuf, "+(");
+							}
+								strcat(arrayBuf, yytext);
 						}
 
 %%
 void setToLast(char *ptr, char str[]) {
 	int i;
 	for(i = 0; str[i] != '\0'; i++);
-	ptr = str + i + 1;
+	ptr = str + i;
+	printf("Set ptr to %s from %s\n", ptr, str);
 }
 int isEmpty(char str[]) {
 	int i;
