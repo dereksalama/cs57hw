@@ -8,12 +8,13 @@
 
 void printNum();
 void printText();
+int isEmpty(char *str);
 %}
 
 %option stack
 %x COMMENT
-%x NESTED_EXPRESSION
-%x EMPTY_BRACKETS
+%x ARRAY
+%x NESTED_ARRAY
 
 white				[ \t\n]
 nonwhite			[^ \t\n]
@@ -33,59 +34,92 @@ id 					({letter}|_)({letter}|{digit}|_)*
 
 comment 			\/\*{anything}*\*\/
 %%
-<INITIAL,NESTED_EXPRESSION>{comment}				{
+						char arrayId[1024];
+						char arrayBuf[1024];
+						char *bufPtr;
+<INITIAL,ARRAY,NESTED_ARRAY>{comment}				{
 								yy_push_state(COMMENT);
 								yyless(2);
 							}
 <COMMENT>\*\/ 				yy_pop_state();
 <COMMENT>{anything}			/*do nothing*/
 
-<INITIAL,NESTED_EXPRESSION>\/\*						{
+<INITIAL,ARRAY,NESTED_ARRAY>\/\*						{
 								printf("%s\n", COMMENT_ERROR);
 								yyterminate();
 							}
 
-<INITIAL,NESTED_EXPRESSION>{hexnumber}			printNum();
-<INITIAL,NESTED_EXPRESSION>{octalnumber}		printNum();
-<INITIAL,NESTED_EXPRESSION>{decimal}			printNum();
+<INITIAL,ARRAY,NESTED_ARRAY>{hexnumber}			printNum();
+<INITIAL,ARRAY,NESTED_ARRAY>{octalnumber}		printNum();
+<INITIAL,ARRAY,NESTED_ARRAY>{decimal}			printNum();
 
-<INITIAL,NESTED_EXPRESSION>{id}\[({white}|{comment})*\] {
-							yy_push_state(EMPTY_BRACKETS);
-							int i = 0;
-							yyless(yyleng - 1);
-							while(yytext[i++] != '[');
-							yytext[i] = '\0';
-							printText();
-						}
-<EMPTY_BRACKETS>\]		{
-							yy_pop_state();
-							printText();
-						}
-<EMPTY_BRACKETS>{anything} /*do nothing*/
 						
-<INITIAL,NESTED_EXPRESSION>{id}\[({anything}*{nonwhite}{anything}*)+\]		{
-							yy_push_state(NESTED_EXPRESSION);
-							printf("%s","*(");
+<INITIAL>{id}\[{anything}*\]		{
+							yy_push_state(ARRAY);
 							int i = 0;
 							while(yytext[i++] != '[');
 							yyless(i);
 							yytext[yyleng - 1] = '\0';
-							printText();
-							printf("%s", "+(");
+							strcpy(arrayId, yytext);
 						}
-<INITIAL,NESTED_EXPRESSION>{id}\[ {
+<ARRAY,NESTED_ARRAY>{id}\[{anything}*\]		{
+							yy_push_state(NESTED_ARRAY);
+							/*we know something is in the array so cpy*/
+							appendToPtr(bufPtr, "*(");
+							appendToPtr(bufPtr, arrayId);
+							appendToPtr(bufPtr, "+(");
+							int i = 0;
+							while(yytext[i++] != '[');
+							yyless(i);
+							yytext[yyleng - 1] = '\0';
+							strcpy(arrayId, yytext);
+						}
+<NESTED_ARRAY>\]			{
+							yy_pop_state();
+							if(isEmpty(bufPtr)) {
+								appendToPtr(bufPtr, arrayId);
+								appendToPtr(bufPtr, "[]");
+							} else {
+								appendToPtr("))");
+							}
+						}		
+<ARRAY>\]				{
+							if(isEmpty(arrayBuf)) {
+								printf("%s", arrayId);
+								printf("[]");
+							} else {
+								printf("%s",arrayBuf);
+								printf("))");
+							}
+							yy_pop_state();
+							bufPtr = arrayBuf;
+						}
+<INITIAL,ARRAY>{id}\[   {
 							printf("%s\n", ARRAY_ERROR);
 							yyterminate();
 						}					
 
-<NESTED_EXPRESSION>\]	{
-							yy_pop_state();
-							printf("%s", "))");
-						}
 
-<NESTED_EXPRESSION,INITIAL>{anything}	printText();
+<INITIAL,ARRAY,NESTED_ARRAY>{anything}	printText();
 
 %%
+int isEmpty(char *str) {
+	char *ptr = str;
+	for(;*ptr != '\0'; ptr++) {
+		if(!(*ptr == ' ' || *ptr == '\t' || *ptr == '\n')) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+void appendToPtr(char *ptr, char *str) {
+	int i = 0;
+	while (str[i] != '\0') {
+		*(ptr++) = str[i++];
+	}
+}
 
 void printNum() {
 	long num;
