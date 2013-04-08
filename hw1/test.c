@@ -16,11 +16,12 @@ int main(void) {
 	bo = 16;
 	bo = 020;
 
+	array[];
 	array[bo];
 	array[bo[zo] + the[clown]];
 	array[/*with comment*/ 020 /* again */];
 	array[/*this should just be "array[]"*/];
-	array[];
+	array[/*so should this*/ /*dfdkj*/];
 	array[	];
 	array[
 			];

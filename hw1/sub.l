@@ -8,6 +8,7 @@
 
 void printNum();
 void printText();
+void appendToPtr(char *ptr, char str[]);
 int isEmpty(char *str);
 %}
 
@@ -37,6 +38,8 @@ comment 			\/\*{anything}*\*\/
 						char arrayId[1024];
 						char arrayBuf[1024];
 						char *bufPtr;
+						char *oldPtr;
+
 <INITIAL,ARRAY,NESTED_ARRAY>{comment}				{
 								yy_push_state(COMMENT);
 								yyless(2);
@@ -56,6 +59,9 @@ comment 			\/\*{anything}*\*\/
 						
 <INITIAL>{id}\[{anything}*\]		{
 							yy_push_state(ARRAY);
+							bufPtr = arrayBuf;
+							memset(arrayBuf, 0, sizeof arrayBuf);
+
 							int i = 0;
 							while(yytext[i++] != '[');
 							yyless(i);
@@ -65,22 +71,24 @@ comment 			\/\*{anything}*\*\/
 <ARRAY,NESTED_ARRAY>{id}\[{anything}*\]		{
 							yy_push_state(NESTED_ARRAY);
 							/*we know something is in the array so cpy*/
+							oldPtr = bufPtr;
 							appendToPtr(bufPtr, "*(");
 							appendToPtr(bufPtr, arrayId);
 							appendToPtr(bufPtr, "+(");
+
 							int i = 0;
 							while(yytext[i++] != '[');
 							yyless(i);
 							yytext[yyleng - 1] = '\0';
 							strcpy(arrayId, yytext);
 						}
-<NESTED_ARRAY>\]			{
+<NESTED_ARRAY>\]		{
 							yy_pop_state();
-							if(isEmpty(bufPtr)) {
+							if(isEmpty(oldPtr)) {
 								appendToPtr(bufPtr, arrayId);
 								appendToPtr(bufPtr, "[]");
 							} else {
-								appendToPtr("))");
+								appendToPtr(bufPtr,"))");
 							}
 						}		
 <ARRAY>\]				{
@@ -92,7 +100,6 @@ comment 			\/\*{anything}*\*\/
 								printf("))");
 							}
 							yy_pop_state();
-							bufPtr = arrayBuf;
 						}
 <INITIAL,ARRAY>{id}\[   {
 							printf("%s\n", ARRAY_ERROR);
@@ -100,13 +107,17 @@ comment 			\/\*{anything}*\*\/
 						}					
 
 
-<INITIAL,ARRAY,NESTED_ARRAY>{anything}	printText();
+<INITIAL>{anything}	printText();
+<ARRAY,NESTED_ARRAY>{anything}	{
+							appendToPtr(bufPtr, yytext);
+						}
 
 %%
-int isEmpty(char *str) {
-	char *ptr = str;
-	for(;*ptr != '\0'; ptr++) {
-		if(!(*ptr == ' ' || *ptr == '\t' || *ptr == '\n')) {
+int isEmpty(char str[]) {
+	int i;
+	for(i = 0; str[i] != '\0'; i++) {
+		char c = str[i];
+		if(!(c == ' ' || c == '\t' || c == '\n')) {
 			return 0;
 		}
 	}
@@ -114,11 +125,12 @@ int isEmpty(char *str) {
 	return 1;
 }
 
-void appendToPtr(char *ptr, char *str) {
-	int i = 0;
-	while (str[i] != '\0') {
-		*(ptr++) = str[i++];
+void appendToPtr(char *ptr, char str[]) {
+	int i;
+	for(i = 0; str[i] != '\0'; ptr++, i++) {
+		*(ptr) = str[i];
 	}
+	*(++ptr) = '\0';
 }
 
 void printNum() {
