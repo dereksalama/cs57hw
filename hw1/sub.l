@@ -13,13 +13,12 @@ void printText();
 %option stack
 %x COMMENT
 %x NESTED_EXPRESSION
+%x EMPTY_BRACKETS
 
 white				[ \t\n]
-notwhite			[^ \t\n]
+nonwhite			[^ \t\n]
 anything			(.|\n)
 digit 				[0-9]
-integer 			{digit}+
-signedint 			[-+]?{integer}
 
 hexletter 			[a-fA-F]
 hexnumber 			0(x|X)({digit}|{hexletter})+
@@ -50,14 +49,21 @@ comment 			\/\*{anything}*\*\/
 <*>{octalnumber}		printNum();
 <*>{decimal}			printNum();
 
-<INITIAL,NESTED_EXPRESSION>{id}\[({comment}|{white})*\] {
+<INITIAL,NESTED_EXPRESSION>{id}\[({white}|{comment})*\] {
+							yy_push_state(EMPTY_BRACKETS);
 							int i = 0;
+							yyless(yyleng - 1);
 							while(yytext[i++] != '[');
-							yytext[i - 1] = '\0';
+							yytext[i] = '\0';
 							printText();
-							printf("%s","[]");
-						} 
-<INITIAL,NESTED_EXPRESSION>{id}\[{anything}+\]		{
+						}
+<EMPTY_BRACKETS>\]		{
+							yy_pop_state();
+							printText();
+						}
+<EMPTY_BRACKETS>{anything} /*do nothing*/
+						
+<INITIAL,NESTED_EXPRESSION>{id}\[({anything}*{nonwhite}{anything}*)+\]		{
 							yy_push_state(NESTED_EXPRESSION);
 							printf("%s","*(");
 							int i = 0;
