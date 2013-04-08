@@ -18,7 +18,7 @@ int main(void) {
 
 	array[bo];
 	array[bo[zo] + the[clown]];
-	array[/*with comment*/ 020];
+	array[/*with comment*/ 020 /* again */];
 	array[/*this should just be "array[]"*/];
 	array[];
 	array[	];

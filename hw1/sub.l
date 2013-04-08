@@ -33,21 +33,21 @@ id 					({letter}|_)({letter}|{digit}|_)*
 
 comment 			\/\*{anything}*\*\/
 %%
-<*>{comment}				{
+<INITIAL,NESTED_EXPRESSION>{comment}				{
 								yy_push_state(COMMENT);
 								yyless(2);
 							}
 <COMMENT>\*\/ 				yy_pop_state();
 <COMMENT>{anything}			/*do nothing*/
 
-<*>\/\*						{
+<INITIAL,NESTED_EXPRESSION>\/\*						{
 								printf("%s\n", COMMENT_ERROR);
 								yyterminate();
 							}
 
-<*>{hexnumber}			printNum();
-<*>{octalnumber}		printNum();
-<*>{decimal}			printNum();
+<INITIAL,NESTED_EXPRESSION>{hexnumber}			printNum();
+<INITIAL,NESTED_EXPRESSION>{octalnumber}		printNum();
+<INITIAL,NESTED_EXPRESSION>{decimal}			printNum();
 
 <INITIAL,NESTED_EXPRESSION>{id}\[({white}|{comment})*\] {
 							yy_push_state(EMPTY_BRACKETS);
