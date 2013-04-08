@@ -7,6 +7,7 @@
 #define ARRAY_ERROR "Error - '[' not matched."
 
 void printNum();
+void printNumToString(char *dest);
 void printText();
 void appendToPtr(char *ptr, char str[]);
 int isEmpty(char *str);
@@ -52,9 +53,12 @@ comment 			\/\*{anything}*\*\/
 								yyterminate();
 							}
 
-<INITIAL,ARRAY,NESTED_ARRAY>{hexnumber}			printNum();
-<INITIAL,ARRAY,NESTED_ARRAY>{octalnumber}		printNum();
-<INITIAL,ARRAY,NESTED_ARRAY>{decimal}			printNum();
+<INITIAL>{hexnumber}		printNum();
+<INITIAL>{octalnumber}		printNum();
+<INITIAL>{decimal}			printNum();
+<ARRAY,NESTED_ARRAY>{hexnumber} printNumToString(arrayBuf);
+<ARRAY,NESTED_ARRAY>{octalnumber}	printNumToString(arrayBuf);
+<ARRAY,NESTED_ARRAY>{decimal} printNumToString(arrayBuf);
 
 						
 <INITIAL>{id}\[{anything}*\]		{
@@ -71,10 +75,10 @@ comment 			\/\*{anything}*\*\/
 <ARRAY,NESTED_ARRAY>{id}\[{anything}*\]		{
 							yy_push_state(NESTED_ARRAY);
 							/*we know something is in the array so cpy*/
-							setToLast(bufPtr, arrayBuf);
 							strcat(arrayBuf, "*(");
 							strcat(arrayBuf, arrayId);
 							strcat(arrayBuf, "+(");
+							setToLast(bufPtr, arrayBuf);
 
 							int i = 0;
 							while(yytext[i++] != '[');
@@ -138,6 +142,13 @@ void appendToPtr(char *ptr, char str[]) {
 	*(++ptr) = '\0';
 }
 
+void printNumToString(char *dest) {
+	long num;
+	char temp[1024];
+	num = strtol(yytext, NULL, 0);
+	sprintf(temp, "%#lx", num);
+	strcat(dest, temp);
+}
 void printNum() {
 	long num;
 	num = strtol(yytext, NULL, 0);
